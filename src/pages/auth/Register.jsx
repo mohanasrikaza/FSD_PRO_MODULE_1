@@ -33,15 +33,30 @@ const Register = () => {
     }
 
     setLoading(true);
-    // TODO: Implement registration logic with API call
+    // In a real app you would call the API here. for now we store users in localStorage
     setTimeout(() => {
-      // Mock user data - replace with actual API response
       const userData = {
-        id: 1,
+        id: Date.now(),
         name: formData.name,
         email: formData.email,
         role: formData.role
       };
+      // save credential for future logins
+      try {
+        const existing = JSON.parse(localStorage.getItem('users')) || [];
+        existing.push({
+          email: formData.email,
+          password: formData.password,
+          role: formData.role,
+          name: formData.name,
+          id: userData.id
+        });
+        localStorage.setItem('users', JSON.stringify(existing));
+      } catch (e) {
+        console.error('Could not save user credentials', e);
+      }
+
+      // immediately log the user in using auth context (which also persists)
       login(userData);
       setLoading(false);
       navigate('/');

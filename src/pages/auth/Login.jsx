@@ -10,10 +10,21 @@ const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  // Demo credentials for testing
+  // Demo credentials for testing (used if no registered user found)
   const validCredentials = {
     student: { email: 'student@example.com', password: 'student123' },
     admin: { email: 'admin@example.com', password: 'admin123' }
+  };
+
+  // look up a registered user in localStorage
+  const findStoredUser = (email, password, role) => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('users')) || [];
+      return stored.find((u) => u.email === email && u.password === password && u.role === role);
+    } catch (e) {
+      console.error('failed to parse stored users', e);
+      return null;
+    }
   };
 
   const handleChange = (e) => {
@@ -29,30 +40,43 @@ const Login = () => {
     e.preventDefault();
     setError('');
 
-    // Validate credentials
-    const validCreds = validCredentials[role];
-    if (credentials.email !== validCreds.email) {
-      setError('Invalid email address');
-      return;
-    }
-    if (credentials.password !== validCreds.password) {
-      setError('Invalid password');
-      return;
+    // Validate credentials against stored users first
+    const storedUser = findStoredUser(credentials.email, credentials.password, role);
+    let userData;
+    if (storedUser) {
+      userData = {
+        id: storedUser.id,
+        name: storedUser.name || (role === 'admin' ? 'Admin User' : 'John Doe'),
+        email: storedUser.email,
+        role
+      };
+    } else {
+      // fall back to demo credentials
+      const validCreds = validCredentials[role];
+      if (credentials.email !== validCreds.email) {
+        setError('Invalid email address');
+        return;
+      }
+      if (credentials.password !== validCreds.password) {
+        setError('Invalid password');
+        return;
+      }
+      userData = {
+        id: 1,
+        name: role === 'admin' ? 'Admin User' : 'John Doe',
+        email: credentials.email,
+        role
+      };
     }
 
     setLoading(true);
     // Credentials are correct, proceed with login
     setTimeout(() => {
-      const userData = {
-        id: 1,
-        name: role === 'admin' ? 'Admin User' : 'John Doe',
-        email: credentials.email,
-        role: role
-      };
       login(userData);
       setLoading(false);
       navigate('/');
     }, 1000);
+
   };
 
   return (
